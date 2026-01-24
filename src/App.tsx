@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { AlertTriangle, Clock, MapPin, Calendar, ArrowRight, Zap, Eye, EyeOff, Skull, AlertCircle } from 'lucide-react';
+import { AlertTriangle, Clock, MapPin, Calendar, ArrowRight, Zap, Eye, EyeOff, Skull, AlertCircle, ChevronDown, ChevronRight, Plus, RefreshCw } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { EXAM_DATA } from './constants';
 import { ThemeState, Exam } from './types';
 import { parseExamDate, getExamEndDate, calculateTimeRemaining, getUrgencyColor, getUrgencyBg } from './utils';
@@ -10,6 +11,14 @@ const App: React.FC = () => {
     const [now, setNow] = useState(new Date());
     const [triageMode, setTriageMode] = useState(false);
     const [sleepMode, setSleepMode] = useState(false);
+    const [expandedExams, setExpandedExams] = useState<Set<string>>(new Set());
+
+    const toggleExam = (code: string) => {
+        const next = new Set(expandedExams);
+        if (next.has(code)) next.delete(code);
+        else next.add(code);
+        setExpandedExams(next);
+    };
 
     useEffect(() => {
         const interval = setInterval(() => setNow(new Date()), 1000);
@@ -146,7 +155,7 @@ const App: React.FC = () => {
                 {/* --- Threat Level --- */}
                 <div className="flex flex-col gap-2">
                     <div className="flex justify-between items-end border-b border-gray-800 pb-2">
-                        <span className="text-[10px] text-gray-500 uppercase tracking-[0.3em] font-mono">System Status</span>
+                        <span className="text-[10px] text-gray-400 uppercase tracking-[0.3em] font-mono font-bold">System Status</span>
                         <span className={`text-[10px] font-mono uppercase animate-pulse ${theme === 'panic' ? 'text-panic' : theme === 'caution' ? 'text-caution' : 'text-safe'}`}>
                             LIVE MONITORING
                         </span>
@@ -156,7 +165,7 @@ const App: React.FC = () => {
                         <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full opacity-10 blur-3xl`} style={{ backgroundColor: primaryColor }}></div>
 
                         <h2 className={`text-5xl md:text-6xl font-bold leading-none tracking-tighter relative z-10 ${theme === 'panic' ? 'text-panic drop-shadow-[0_0_10px_rgba(255,0,0,0.8)]' : theme === 'caution' ? 'text-caution' : 'text-safe'}`}>
-                            <span className="block text-sm font-mono tracking-widest text-gray-500 mb-2 font-normal opacity-70">THREAT LEVEL</span>
+                            <span className="block text-sm font-mono tracking-widest text-gray-400 mb-2 font-bold opacity-70">THREAT LEVEL</span>
                             <GlitchText text={theme.toUpperCase()} active={theme === 'panic'} />
                         </h2>
                     </div>
@@ -262,36 +271,106 @@ const App: React.FC = () => {
                     <div className="flex flex-col gap-6">
                         {(Object.entries(groupedList) as [string, Exam[]][]).map(([date, exams]) => (
                             <div key={date} className="flex flex-col gap-3">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-[10px] font-mono text-gray-600 uppercase tracking-widest">{new Date(date).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}</span>
-                                    {new Date(date).getTime() < new Date('2026-02-01').getTime() && (
-                                        <span className="text-[10px] font-mono text-panic/50 uppercase">Week 1: Hell Week</span>
-                                    )}
-                                </div>
-                                {exams.map((exam, idx) => (
-                                    <div key={`${exam.course_code}-${idx}`}
-                                        className={`group relative flex items-center justify-between p-4 bg-surface border-l-4 border-r border-t border-b border-gray-800 hover:border-gray-600 transition-all ${getUrgencyColor(exam.urgency).split(' ')[1]}`}>
-                                        <div className="flex flex-col gap-1">
-                                            <div className="flex items-center gap-2">
-                                                <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 ${getUrgencyBg(exam.urgency)} ${getUrgencyColor(exam.urgency).split(' ')[0]}`}>
-                                                    {exam.urgency}
-                                                </span>
-                                                {exam.urgency === 'EXTREME' && <AlertTriangle size={12} className="text-panic" />}
-                                            </div>
-                                            <h5 className="text-white font-bold text-lg leading-tight">{exam.course_name}</h5>
-                                            <div className="flex items-center gap-3 text-gray-500 text-xs font-mono mt-1">
-                                                <span className="flex items-center gap-1"><Calendar size={10} /> {exam.date}</span>
-                                                <span className="flex items-center gap-1"><Clock size={10} /> {exam.time}</span>
-                                                <span className="flex items-center gap-1"><MapPin size={10} /> {exam.venue}</span>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center">
-                                            <button className="w-8 h-8 flex items-center justify-center border border-gray-700 text-gray-500 hover:bg-white hover:text-black hover:border-white transition-all">
-                                                <ArrowRight size={16} />
-                                            </button>
-                                        </div>
+                                <div className="flex items-center justify-between border-b border-gray-900 pb-1 mb-1">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-1 h-4 bg-gray-800"></div>
+                                        <span className="text-xs font-mono text-gray-300 uppercase tracking-wider font-bold">
+                                            {new Date(date).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}
+                                        </span>
+                                        {new Date(date).toDateString() === new Date().toDateString() && (
+                                            <span className="px-1.5 py-0.5 bg-safe/10 text-safe text-[8px] font-bold uppercase tracking-tighter border border-safe/20">Target Date</span>
+                                        )}
                                     </div>
-                                ))}
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[10px] font-mono text-gray-500 italic mr-2">
+                                            {Math.ceil((new Date(date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) === 0
+                                                ? 'Today'
+                                                : `${Math.ceil((new Date(date).getTime() - new Date(new Date().setHours(0, 0, 0, 0)).getTime()) / (1000 * 60 * 60 * 24))} days to go`}
+                                        </span>
+                                        {new Date(date).getTime() < new Date('2026-02-01').getTime() && (
+                                            <span className="px-1.5 py-0.5 bg-panic/5 text-panic/60 text-[8px] font-bold uppercase tracking-widest border border-panic/10">Week 01 // HELL_WEEK</span>
+                                        )}
+                                    </div>
+                                </div>
+                                {exams.map((exam, idx) => {
+                                    const isExpanded = expandedExams.has(exam.course_code);
+                                    const examTimer = calculateTimeRemaining(parseExamDate(exam.date, exam.time), sleepMode);
+                                    const urgencyClass = getUrgencyColor(exam.urgency).split(' ')[1];
+
+                                    return (
+                                        <div key={`${exam.course_code}-${idx}`} className="flex flex-col">
+                                            <div
+                                                onClick={() => toggleExam(exam.course_code)}
+                                                className={`group relative flex items-center justify-between p-4 bg-surface border-l-4 border-r border-t border-b border-gray-800 hover:border-gray-600 transition-all cursor-pointer ${urgencyClass}`}>
+                                                <div className="flex flex-col gap-1">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 ${getUrgencyBg(exam.urgency)} ${getUrgencyColor(exam.urgency).split(' ')[0]}`}>
+                                                            {exam.urgency}
+                                                        </span>
+                                                        {exam.urgency === 'EXTREME' && <AlertTriangle size={12} className="text-panic" />}
+                                                    </div>
+                                                    <h5 className="text-white font-bold text-lg leading-tight">
+                                                        <span className="text-xs text-gray-500 mr-2">{exam.course_code}</span>
+                                                        {exam.course_name}
+                                                    </h5>
+                                                    <div className="flex items-center gap-3 text-gray-400 text-[10px] font-mono mt-1">
+                                                        <span className="flex items-center gap-1"><Calendar size={10} /> {new Date(exam.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+                                                        <span className="flex items-center gap-1"><Clock size={10} /> {exam.time}</span>
+                                                        <span className="flex items-center gap-1"><MapPin size={10} /> {exam.venue}</span>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center">
+                                                    <div className="w-8 h-8 flex items-center justify-center border border-gray-700 text-gray-500 group-hover:bg-white group-hover:text-black group-hover:border-white transition-all">
+                                                        {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* --- Dropdown Timer --- */}
+                                            <AnimatePresence>
+                                                {isExpanded && (
+                                                    <motion.div
+                                                        initial={{ height: 0, opacity: 0 }}
+                                                        animate={{ height: 'auto', opacity: 1 }}
+                                                        exit={{ height: 0, opacity: 0 }}
+                                                        transition={{ duration: 0.3, ease: 'easeInOut' }}
+                                                        className="overflow-hidden"
+                                                    >
+                                                        <div className="bg-black/40 border-x border-b border-gray-800 p-4">
+                                                            <div className="flex justify-between items-center mb-3">
+                                                                <span className="text-[10px] uppercase tracking-widest text-gray-600 font-mono">
+                                                                    {sleepMode ? "Adjusted Study Countdown" : "Absolute Countdown"}
+                                                                </span>
+                                                                <span className="text-[10px] font-mono text-gray-700">{exam.course_code}</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="flex-1 flex flex-col items-center p-2 border border-gray-800 bg-void">
+                                                                    <span className="text-xl font-mono font-bold text-white">{examTimer.days.toString().padStart(2, '0')}</span>
+                                                                    <span className="text-[8px] uppercase text-gray-600 font-mono">Days</span>
+                                                                </div>
+                                                                <span className="text-gray-800 font-bold">:</span>
+                                                                <div className="flex-1 flex flex-col items-center p-2 border border-gray-800 bg-void">
+                                                                    <span className="text-xl font-mono font-bold text-white">{examTimer.hours.toString().padStart(2, '0')}</span>
+                                                                    <span className="text-[8px] uppercase text-gray-600 font-mono">Hrs</span>
+                                                                </div>
+                                                                <span className="text-gray-800 font-bold">:</span>
+                                                                <div className="flex-1 flex flex-col items-center p-2 border border-gray-800 bg-void">
+                                                                    <span className="text-xl font-mono font-bold text-white">{examTimer.minutes.toString().padStart(2, '0')}</span>
+                                                                    <span className="text-[8px] uppercase text-gray-600 font-mono">Mins</span>
+                                                                </div>
+                                                                <span className="text-gray-800 font-bold">:</span>
+                                                                <div className="flex-1 flex flex-col items-center p-2 border border-gray-800 bg-void">
+                                                                    <span className="text-xl font-mono font-bold text-panic">{examTimer.seconds.toString().padStart(2, '0')}</span>
+                                                                    <span className="text-[8px] uppercase text-gray-600 font-mono">Secs</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         ))}
                         {Object.keys(groupedList).length === 0 && (
@@ -306,10 +385,12 @@ const App: React.FC = () => {
                 <div className="grid grid-cols-2 gap-4">
                     <button className="group relative overflow-hidden flex items-center justify-center gap-2 py-4 px-4 bg-transparent border border-gray-700 hover:border-white text-white transition-all font-bold uppercase tracking-wider text-sm">
                         <div className="absolute inset-0 bg-white translate-y-full group-hover:translate-y-0 transition-transform duration-300 z-0"></div>
-                        <span className="relative z-10 group-hover:text-black flex items-center gap-2">Add Exam</span>
+                        <span className="relative z-10 group-hover:text-black flex items-center gap-2">
+                            <Plus size={16} /> Add Exam
+                        </span>
                     </button>
                     <button className={`flex items-center justify-center gap-2 py-4 px-4 border text-black font-bold uppercase tracking-wider text-sm shadow-[0_0_15px_rgba(0,0,0,0.5)] hover:opacity-90 transition-opacity ${theme === 'panic' ? 'bg-panic border-panic' : theme === 'caution' ? 'bg-caution border-caution' : 'bg-safe border-safe'}`}>
-                        <span>Sync Cal</span>
+                        <RefreshCw size={16} /> <span>Sync Cal</span>
                     </button>
                 </div>
 
