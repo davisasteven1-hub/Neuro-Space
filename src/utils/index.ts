@@ -1,7 +1,8 @@
 import { TimeRemaining, Exam } from '../types';
 
 export const parseExamDate = (date: string, time: string): Date => {
-    return new Date(`${date}T${time}:00`);
+    // Explicitly set to UTC+1 as requested
+    return new Date(`${date}T${time}:00+01:00`);
 };
 
 export const getExamEndDate = (exam: Exam): Date => {
@@ -19,24 +20,28 @@ export const calculateTimeRemaining = (targetDate: Date, sleepAdjusted: boolean)
         return { days: 0, hours: 0, minutes: 0, seconds: 0, totalHours: 0, isLate: true };
     }
 
-    let totalSeconds = Math.floor(diffMs / 1000);
-    let days = Math.floor(totalSeconds / (3600 * 24));
-    let hours = Math.floor((totalSeconds % (3600 * 24)) / 3600);
-    let minutes = Math.floor((totalSeconds % 3600) / 60);
-    let seconds = totalSeconds % 60;
-
     const totalHoursReal = diffMs / (1000 * 60 * 60);
+    let effectiveSeconds = Math.floor(diffMs / 1000);
 
     if (sleepAdjusted) {
-        const awakeRatio = 16 / 24;
-        const adjustedTotalSeconds = totalSeconds * awakeRatio;
-
-        days = Math.floor(adjustedTotalSeconds / (3600 * 16));
-        const remainingSeconds = adjustedTotalSeconds % (3600 * 16);
-        hours = Math.floor(remainingSeconds / 3600);
-        minutes = Math.floor((remainingSeconds % 3600) / 60);
-        seconds = Math.floor(remainingSeconds % 60);
+        // "Subtract 8 hours of sleep per day"
+        // We calculate how many 24-hour chunks exist and subtract 8h for each.
+        // This is equivalent to multiplying by (16/24) or 2/3.
+        const studyRatio = 16 / 24;
+        effectiveSeconds = Math.floor(effectiveSeconds * studyRatio);
     }
+
+    // For the UI blocks, we still want to show them in a way that feels natural.
+    // In "Study Mode", a "Day" is now a 16-hour session of potential studying.
+    const secondsInStudyDay = 16 * 3600;
+    const secondsInRealDay = 24 * 3600;
+
+    const divisor = sleepAdjusted ? secondsInStudyDay : secondsInRealDay;
+
+    const days = Math.floor(effectiveSeconds / divisor);
+    const hours = Math.floor((effectiveSeconds % divisor) / 3600);
+    const minutes = Math.floor((effectiveSeconds % 3600) / 60);
+    const seconds = Math.floor(effectiveSeconds % 60);
 
     return { days, hours, minutes, seconds, totalHours: totalHoursReal, isLate: false };
 };
