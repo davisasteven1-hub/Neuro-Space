@@ -53,8 +53,8 @@ const App: React.FC = () => {
 
     // 3. Double Header Detection
     const doubleHeaderExam = useMemo(() => {
-        if (!activeExam || upcomingExams.length < 2) return null;
-        const next = upcomingExams[1];
+        if (!activeExam || upcomingExams.length < 1) return null;
+        const next = upcomingExams[0];
         if (activeExam.date === next.date) {
             return next;
         }
@@ -122,8 +122,8 @@ const App: React.FC = () => {
 
     return (
         <div className={`min-h-screen bg-void bg-grid font-display selection:bg-white selection:text-black overflow-x-hidden flex flex-col`}>
-            {/* --- Sticky Header --- */}
-            <header className="sticky top-0 z-50 border-b-2 border-[#1a1a1a] bg-void/90 backdrop-blur-md">
+            {/* --- Persistent Header --- */}
+            <header className="fixed top-0 left-0 right-0 z-50 border-b-2 border-[#1a1a1a] bg-void/90 backdrop-blur-md">
                 <div className="max-w-xl mx-auto flex items-center justify-between px-4 py-3">
                     <div className="flex items-center gap-3">
                         <AlertTriangle className={`w-6 h-6 ${theme === 'panic' ? 'text-panic animate-pulse-fast' : theme === 'caution' ? 'text-caution' : 'text-safe'}`} />
@@ -150,7 +150,7 @@ const App: React.FC = () => {
                 </div>
             </header>
 
-            <main className="flex-1 max-w-xl mx-auto w-full p-4 flex flex-col gap-8">
+            <main className="flex-1 max-w-xl mx-auto w-full p-4 pt-20 flex flex-col gap-8">
 
                 {/* --- Threat Level --- */}
                 <div className="flex flex-col gap-2">
@@ -283,9 +283,12 @@ const App: React.FC = () => {
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <span className="text-[10px] font-mono text-gray-500 italic mr-2">
-                                            {Math.ceil((new Date(date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) === 0
-                                                ? 'Today'
-                                                : `${Math.ceil((new Date(date).getTime() - new Date(new Date().setHours(0, 0, 0, 0)).getTime()) / (1000 * 60 * 60 * 24))} days to go`}
+                                            {(() => {
+                                                const examDate = parseExamDate(date, "00:00");
+                                                const today = new Date(new Date().setHours(0, 0, 0, 0));
+                                                const diffDays = Math.round((examDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                                                return diffDays === 0 ? 'Today' : (diffDays === 1 ? 'Tomorrow' : `${diffDays} days to go`);
+                                            })()}
                                         </span>
                                         {new Date(date).getTime() < new Date('2026-02-01').getTime() && (
                                             <span className="px-1.5 py-0.5 bg-panic/5 text-panic/60 text-[8px] font-bold uppercase tracking-widest border border-panic/10">Week 01 // HELL_WEEK</span>
@@ -381,21 +384,26 @@ const App: React.FC = () => {
                     </div>
                 </section>
 
-                {/* --- Action Buttons --- */}
-                <div className="grid grid-cols-2 gap-4">
-                    <button className="group relative overflow-hidden flex items-center justify-center gap-2 py-4 px-4 bg-transparent border border-gray-700 hover:border-white text-white transition-all font-bold uppercase tracking-wider text-sm">
-                        <div className="absolute inset-0 bg-white translate-y-full group-hover:translate-y-0 transition-transform duration-300 z-0"></div>
-                        <span className="relative z-10 group-hover:text-black flex items-center gap-2">
-                            <Plus size={16} /> Add Exam
-                        </span>
-                    </button>
-                    <button className={`flex items-center justify-center gap-2 py-4 px-4 border text-black font-bold uppercase tracking-wider text-sm shadow-[0_0_15px_rgba(0,0,0,0.5)] hover:opacity-90 transition-opacity ${theme === 'panic' ? 'bg-panic border-panic' : theme === 'caution' ? 'bg-caution border-caution' : 'bg-safe border-safe'}`}>
-                        <RefreshCw size={16} /> <span>Sync Cal</span>
-                    </button>
-                </div>
+                {/* Action Buttons removed from main flow to footer */}
 
             </main>
-            <div className="h-8"></div>
+
+            {/* --- Persistent Bottom Bar --- */}
+            <footer className="fixed bottom-0 left-0 right-0 z-50 border-t-2 border-[#1a1a1a] bg-void/90 backdrop-blur-md p-4">
+                <div className="max-w-xl mx-auto grid grid-cols-2 gap-4">
+                    <button className="group relative overflow-hidden flex items-center justify-center gap-2 py-3 px-4 bg-transparent border border-gray-700 hover:border-white text-white transition-all font-bold uppercase tracking-wider text-xs">
+                        <div className="absolute inset-0 bg-white translate-y-full group-hover:translate-y-0 transition-transform duration-300 z-0"></div>
+                        <span className="relative z-10 group-hover:text-black flex items-center gap-2">
+                            <Plus size={14} /> Add Exam
+                        </span>
+                    </button>
+                    <button className={`flex items-center justify-center gap-2 py-3 px-4 border text-black font-bold uppercase tracking-wider text-xs shadow-[0_0_15px_rgba(0,0,0,0.5)] hover:opacity-90 transition-opacity ${theme === 'panic' ? 'bg-panic border-panic' : theme === 'caution' ? 'bg-caution border-caution' : 'bg-safe border-safe'}`}>
+                        <RefreshCw size={14} /> <span>Sync Cal</span>
+                    </button>
+                </div>
+            </footer>
+
+            <div className="h-24"></div>
         </div>
     );
 };

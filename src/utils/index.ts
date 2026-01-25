@@ -24,19 +24,16 @@ export const calculateTimeRemaining = (targetDate: Date, sleepAdjusted: boolean)
     let effectiveSeconds = Math.floor(diffMs / 1000);
 
     if (sleepAdjusted) {
-        // "Subtract 8 hours of sleep per day"
-        // We calculate how many 24-hour chunks exist and subtract 8h for each.
-        // This is equivalent to multiplying by (16/24) or 2/3.
-        const studyRatio = 16 / 24;
+        // Direct Subtraction Logic:
+        // We subtract 8 hours for every 24-hour cycle.
+        // This means we only count 2/3 of the actual time as "available".
+        const studyRatio = 2 / 3; // (24-8)/24
         effectiveSeconds = Math.floor(effectiveSeconds * studyRatio);
     }
 
-    // For the UI blocks, we still want to show them in a way that feels natural.
-    // In "Study Mode", a "Day" is now a 16-hour session of potential studying.
-    const secondsInStudyDay = 16 * 3600;
-    const secondsInRealDay = 24 * 3600;
-
-    const divisor = sleepAdjusted ? secondsInStudyDay : secondsInRealDay;
+    // Always use standard real-world units for display (1 day = 24 hours)
+    // This makes the "lost" sleep hours visible (e.g., 48h real becomes 1d 8h study)
+    const divisor = 24 * 3600;
 
     const days = Math.floor(effectiveSeconds / divisor);
     const hours = Math.floor((effectiveSeconds % divisor) / 3600);
