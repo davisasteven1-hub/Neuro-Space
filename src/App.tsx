@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { AlertTriangle, Clock, MapPin, Calendar, Zap, Eye, EyeOff, Skull, AlertCircle, ChevronDown, ChevronRight, Settings, BookOpen, Timer } from 'lucide-react';
+import { AlertTriangle, Clock, MapPin, Calendar, Zap, Eye, EyeOff, Skull, AlertCircle, ChevronDown, ChevronRight, Settings, BookOpen, Timer, Plus, Pencil } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { EXAM_DATA } from './constants';
 import { ThemeState, Exam, SleepSchedule, PomodoroState, PomodoroSettings } from './types';
@@ -9,6 +9,7 @@ import { TimerBlock } from './components/TimerBlock';
 import { PomodoroTimer } from './components/PomodoroTimer';
 import { StudyPlanner } from './components/StudyPlanner';
 import { SleepSettings } from './components/SleepSettings';
+import { ExamForm } from './components/ExamForm';
 import { useLocalStorage } from './hooks/useLocalStorage';
 
 const DEFAULT_SLEEP_SCHEDULE: SleepSchedule = { bedtime: '23:00', wakeTime: '07:00' };
@@ -29,6 +30,8 @@ const App: React.FC = () => {
     const [showSleepSettings, setShowSleepSettings] = useState(false);
     const [showStudyPlanner, setShowStudyPlanner] = useState(false);
     const [showPomodoro, setShowPomodoro] = useState(false);
+    const [showExamForm, setShowExamForm] = useState(false);
+    const [editingExam, setEditingExam] = useState<Exam | null>(null);
     const [pomodoroState, setPomodoroState] = useState<PomodoroState>({
         isRunning: false,
         mode: 'focus',
@@ -139,6 +142,34 @@ const App: React.FC = () => {
         return end.getHours() >= 17;
     }, [activeExam]);
 
+    // CRUD handlers
+    const handleAddExam = useCallback((exam: Exam) => {
+        setExams((prev: Exam[]) => [...prev, exam]);
+        setShowExamForm(false);
+    }, [setExams]);
+
+    const handleEditExam = useCallback((exam: Exam) => {
+        setExams((prev: Exam[]) => prev.map(e => e.course_code === exam.course_code ? exam : e));
+        setEditingExam(null);
+        setShowExamForm(false);
+    }, [setExams]);
+
+    const handleDeleteExam = useCallback((courseCode: string) => {
+        setExams((prev: Exam[]) => prev.filter(e => e.course_code !== courseCode));
+        setEditingExam(null);
+        setShowExamForm(false);
+    }, [setExams]);
+
+    const openAddForm = useCallback(() => {
+        setEditingExam(null);
+        setShowExamForm(true);
+    }, []);
+
+    const openEditForm = useCallback((exam: Exam) => {
+        setEditingExam(exam);
+        setShowExamForm(true);
+    }, []);
+
     const startPomodoro = useCallback((courseCode: string) => {
         const exam = exams.find(e => e.course_code === courseCode);
         setPomodoroState({
@@ -217,6 +248,26 @@ const App: React.FC = () => {
             </header>
 
             <main className="flex-1 max-w-xl mx-auto w-full p-4 pt-20 flex flex-col gap-8">
+
+                {/* --- Exam Form Panel --- */}
+                <AnimatePresence>
+                    {showExamForm && (
+                        <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="overflow-hidden"
+                        >
+                            <ExamForm
+                                exam={editingExam}
+                                onSave={editingExam ? handleEditExam : handleAddExam}
+                                onDelete={editingExam ? handleDeleteExam : undefined}
+                                onClose={() => { setShowExamForm(false); setEditingExam(null); }}
+                            />
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
                 {/* --- Sleep Settings Panel --- */}
                 <AnimatePresence>
@@ -382,9 +433,15 @@ const App: React.FC = () => {
 
                 {/* --- Incoming List --- */}
                 <section className="flex flex-col gap-4">
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3">
                         <h4 className="text-white font-bold tracking-widest text-xs uppercase whitespace-nowrap">Incoming Threats</h4>
                         <div className="h-px w-full bg-gray-800"></div>
+                        <button
+                            onClick={openAddForm}
+                            className="flex items-center gap-1.5 px-3 py-2 border border-gray-700 text-gray-400 text-[10px] font-mono uppercase tracking-wider whitespace-nowrap hover:border-safe hover:text-safe active:bg-safe/10 transition-colors"
+                        >
+                            <Plus size={12} /> Add
+                        </button>
                     </div>
 
                     <div className="flex flex-col gap-6">
@@ -450,7 +507,14 @@ const App: React.FC = () => {
                                                         <span className="flex items-center gap-1"><MapPin size={10} /> {exam.venue}</span>
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center">
+                                                <div className="flex items-center gap-1">
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); openEditForm(exam); }}
+                                                        className="w-8 h-8 flex items-center justify-center border border-gray-700 text-gray-500 hover:border-safe hover:text-safe active:bg-safe/10 transition-all"
+                                                        title="Edit exam"
+                                                    >
+                                                        <Pencil size={12} />
+                                                    </button>
                                                     <div className="w-8 h-8 flex items-center justify-center border border-gray-700 text-gray-500 group-hover:bg-white group-hover:text-black group-hover:border-white transition-all">
                                                         {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                                                     </div>
