@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { AlertTriangle, Clock, MapPin, Calendar, ArrowRight, Zap, Eye, EyeOff, Skull, AlertCircle, ChevronDown, ChevronRight, Plus, RefreshCw } from 'lucide-react';
+import { AlertTriangle, Clock, MapPin, Calendar, Zap, Eye, EyeOff, Skull, AlertCircle, ChevronDown, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { EXAM_DATA } from './constants';
 import { ThemeState, Exam } from './types';
@@ -275,24 +275,33 @@ const App: React.FC = () => {
                                     <div className="flex items-center gap-3">
                                         <div className="w-1 h-4 bg-gray-800"></div>
                                         <span className="text-xs font-mono text-gray-300 uppercase tracking-wider font-bold">
-                                            {new Date(date).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}
+                                            {(() => {
+                                                const [y, m, d] = date.split('-').map(Number);
+                                                return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
+                                            })()}
                                         </span>
-                                        {new Date(date).toDateString() === new Date().toDateString() && (
+                                        {(() => {
+                                            const [y, m, d] = date.split('-').map(Number);
+                                            const examLocal = new Date(y, m - 1, d);
+                                            const todayLocal = new Date();
+                                            todayLocal.setHours(0, 0, 0, 0);
+                                            return examLocal.getTime() === todayLocal.getTime();
+                                        })() && (
                                             <span className="px-1.5 py-0.5 bg-safe/10 text-safe text-[8px] font-bold uppercase tracking-tighter border border-safe/20">Target Date</span>
                                         )}
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <span className="text-[10px] font-mono text-gray-500 italic mr-2">
                                             {(() => {
-                                                const examDate = parseExamDate(date, "00:00");
-                                                const today = new Date(new Date().setHours(0, 0, 0, 0));
+                                                const [year, month, day] = date.split('-').map(Number);
+                                                const examDate = new Date(year, month - 1, day);
+                                                const today = new Date();
+                                                today.setHours(0, 0, 0, 0);
                                                 const diffDays = Math.round((examDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                                                if (diffDays < 0) return 'Passed';
                                                 return diffDays === 0 ? 'Today' : (diffDays === 1 ? 'Tomorrow' : `${diffDays} days to go`);
                                             })()}
                                         </span>
-                                        {new Date(date).getTime() < new Date('2026-02-01').getTime() && (
-                                            <span className="px-1.5 py-0.5 bg-panic/5 text-panic/60 text-[8px] font-bold uppercase tracking-widest border border-panic/10">Week 01 // HELL_WEEK</span>
-                                        )}
                                     </div>
                                 </div>
                                 {exams.map((exam, idx) => {
@@ -317,7 +326,7 @@ const App: React.FC = () => {
                                                         {exam.course_name}
                                                     </h5>
                                                     <div className="flex items-center gap-3 text-gray-400 text-[10px] font-mono mt-1">
-                                                        <span className="flex items-center gap-1"><Calendar size={10} /> {new Date(exam.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+                                                        <span className="flex items-center gap-1"><Calendar size={10} /> {(() => { const [y, m, d] = exam.date.split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }); })()}</span>
                                                         <span className="flex items-center gap-1"><Clock size={10} /> {exam.time}</span>
                                                         <span className="flex items-center gap-1"><MapPin size={10} /> {exam.venue}</span>
                                                     </div>
@@ -388,22 +397,7 @@ const App: React.FC = () => {
 
             </main>
 
-            {/* --- Persistent Bottom Bar --- */}
-            <footer className="fixed bottom-0 left-0 right-0 z-50 border-t-2 border-[#1a1a1a] bg-void/90 backdrop-blur-md p-4">
-                <div className="max-w-xl mx-auto grid grid-cols-2 gap-4">
-                    <button className="group relative overflow-hidden flex items-center justify-center gap-2 py-3 px-4 bg-transparent border border-gray-700 hover:border-white text-white transition-all font-bold uppercase tracking-wider text-xs">
-                        <div className="absolute inset-0 bg-white translate-y-full group-hover:translate-y-0 transition-transform duration-300 z-0"></div>
-                        <span className="relative z-10 group-hover:text-black flex items-center gap-2">
-                            <Plus size={14} /> Add Exam
-                        </span>
-                    </button>
-                    <button className={`flex items-center justify-center gap-2 py-3 px-4 border text-black font-bold uppercase tracking-wider text-xs shadow-[0_0_15px_rgba(0,0,0,0.5)] hover:opacity-90 transition-opacity ${theme === 'panic' ? 'bg-panic border-panic' : theme === 'caution' ? 'bg-caution border-caution' : 'bg-safe border-safe'}`}>
-                        <RefreshCw size={14} /> <span>Sync Cal</span>
-                    </button>
-                </div>
-            </footer>
-
-            <div className="h-24"></div>
+            <div className="h-8"></div>
         </div>
     );
 };
