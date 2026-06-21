@@ -1,4 +1,4 @@
-import { TimeRemaining, Exam } from '../types';
+import { TimeRemaining, Exam, SleepSchedule, StudyAllocation } from '../types';
 
 export const parseExamDate = (date: string, time: string): Date => {
     // Explicitly set to UTC+1 as requested
@@ -12,7 +12,19 @@ export const getExamEndDate = (exam: Exam): Date => {
     return end;
 };
 
-export const calculateTimeRemaining = (targetDate: Date, sleepAdjusted: boolean): TimeRemaining => {
+export const getSleepHours = (schedule: SleepSchedule): number => {
+    const [bedH, bedM] = schedule.bedtime.split(':').map(Number);
+    const [wakeH, wakeM] = schedule.wakeTime.split(':').map(Number);
+    let bedMinutes = bedH * 60 + bedM;
+    let wakeMinutes = wakeH * 60 + wakeM;
+    if (wakeMinutes <= bedMinutes) {
+        // Crosses midnight (e.g., 23:00 to 07:00)
+        return (1440 - bedMinutes + wakeMinutes) / 60;
+    }
+    return (wakeMinutes - bedMinutes) / 60;
+};
+
+export const calculateTimeRemaining = (targetDate: Date, sleepAdjusted: boolean, schedule?: SleepSchedule): TimeRemaining => {
     const now = new Date();
     const diffMs = targetDate.getTime() - now.getTime();
 
@@ -24,15 +36,11 @@ export const calculateTimeRemaining = (targetDate: Date, sleepAdjusted: boolean)
     let effectiveSeconds = Math.floor(diffMs / 1000);
 
     if (sleepAdjusted) {
-        // Direct Subtraction Logic:
-        // We subtract 8 hours for every 24-hour cycle.
-        // This means we only count 2/3 of the actual time as "available".
-        const studyRatio = 2 / 3; // (24-8)/24
+        const sleepHours = schedule ? getSleepHours(schedule) : 8;
+        const studyRatio = (24 - sleepHours) / 24;
         effectiveSeconds = Math.floor(effectiveSeconds * studyRatio);
     }
 
-    // Always use standard real-world units for display (1 day = 24 hours)
-    // This makes the "lost" sleep hours visible (e.g., 48h real becomes 1d 8h study)
     const divisor = 24 * 3600;
 
     const days = Math.floor(effectiveSeconds / divisor);
@@ -41,6 +49,52 @@ export const calculateTimeRemaining = (targetDate: Date, sleepAdjusted: boolean)
     const seconds = Math.floor(effectiveSeconds % 60);
 
     return { days, hours, minutes, seconds, totalHours: totalHoursReal, isLate: false };
+};
+
+const URGENCY_WEIGHTS: Record<string, number> = {
+    'EXTREME': 5,
+    'CRITICAL': 4,
+    'HIGH': 3,
+    'MEDIUM': 2,
+    'LOW': 1,
+};
+
+export const calculateStudyAllocations = (
+    exams: Exam[],
+    schedule: SleepSchedule
+): StudyAllocation[] => {
+    const now = new Date();
+    const futureExams = exams
+        .filter(e => parseExamDate(e.date, e.time) > now)
+        .sort((a, b) => parseExamDate(a.date, a.time).getTime() - parseExamDate(b.date, b.time).getTime());
+
+    if (futureExams.length === 0) return [];
+
+    const sleepHours = getSleepHours(schedule);
+    const availableHoursPerDay = 24 - sleepHours;
+
+    const allocations: StudyAllocation[] = futureExams.map(exam => {
+        const examDate = parseExamDate(exam.date, exam.time);
+        const daysUntil = Math.max(1, Math.ceil((examDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+        const totalStudyHours = daysUntil * availableHoursPerDay;
+        const weight = URGENCY_WEIGHTS[exam.urgency] || 1;
+
+        return {
+            course_code: exam.course_code,
+            course_name: exam.course_name,
+            hoursPerDay: 0, // calculated below
+            totalHoursAvailable: totalStudyHours,
+            urgencyWeight: weight,
+        };
+    });
+
+    // Distribute daily hours proportionally by urgency weight
+    const totalWeight = allocations.reduce((sum, a) => sum + a.urgencyWeight, 0);
+    allocations.forEach(a => {
+        a.hoursPerDay = Math.round((a.urgencyWeight / totalWeight) * availableHoursPerDay * 10) / 10;
+    });
+
+    return allocations;
 };
 
 export const getUrgencyColor = (urgency: string) => {
