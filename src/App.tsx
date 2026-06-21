@@ -11,6 +11,7 @@ import { StudyPlanner } from './components/StudyPlanner';
 import { SleepSettings } from './components/SleepSettings';
 import { ExamForm } from './components/ExamForm';
 import { useLocalStorage } from './hooks/useLocalStorage';
+import { useExamStorage } from './hooks/useExamStorage';
 
 const DEFAULT_SLEEP_SCHEDULE: SleepSchedule = { bedtime: '23:00', wakeTime: '07:00' };
 const DEFAULT_POMODORO_SETTINGS: PomodoroSettings = { focusMinutes: 25, breakMinutes: 5 };
@@ -18,8 +19,8 @@ const DEFAULT_POMODORO_SETTINGS: PomodoroSettings = { focusMinutes: 25, breakMin
 const App: React.FC = () => {
     const [now, setNow] = useState(new Date());
 
-    // Persisted state via localStorage
-    const [exams, setExams] = useLocalStorage<Exam[]>('exam-data', EXAM_DATA);
+    // Exam data persisted to data/exams.json via API
+    const [exams, setExams, examsLoading] = useExamStorage();
     const [sleepSchedule, setSleepSchedule] = useLocalStorage<SleepSchedule>('sleep-schedule', DEFAULT_SLEEP_SCHEDULE);
     const [pomodoroSettings] = useLocalStorage<PomodoroSettings>('pomodoro-settings', DEFAULT_POMODORO_SETTINGS);
     const [triageMode, setTriageMode] = useLocalStorage<boolean>('triage-mode', false);
@@ -52,13 +53,7 @@ const App: React.FC = () => {
         return () => clearInterval(interval);
     }, []);
 
-    // Sync exams if EXAM_DATA changes (e.g., code update) and localStorage has stale data
-    useEffect(() => {
-        const storedRaw = window.localStorage.getItem('exam-data');
-        if (!storedRaw) {
-            setExams(EXAM_DATA);
-        }
-    }, [setExams]);
+
 
     // 1. Identify active or next exam
     const { activeExam, isOngoing } = useMemo(() => {
