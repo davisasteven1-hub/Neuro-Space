@@ -181,8 +181,8 @@ const App: React.FC = () => {
     if (!activeExam) {
         return (
             <div className="min-h-screen bg-grid bg-void text-safe font-mono flex items-center justify-center flex-col gap-4 p-4">
-                <h1 className="text-4xl font-bold border-2 border-safe p-4 uppercase tracking-widest">System Offline</h1>
-                <p>No upcoming threats detected. Relax.</p>
+                <h1 className="text-4xl font-bold border-2 border-safe p-4 uppercase tracking-widest">NEUROSPACE ONLINE</h1>
+                <p>No upcoming tasks. Stay productive.</p>
             </div>
         );
     }
