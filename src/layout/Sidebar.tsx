@@ -10,59 +10,50 @@ import {
   Settings,
 } from "lucide-react";
 
+import { NavLink } from "react-router-dom";
+
 const Sidebar = () => {
+  const links = [
+    { name: "Dashboard", icon: LayoutDashboard, path: "/" },
+    { name: "Timetable", icon: CalendarDays, path: "/timetable" },
+    { name: "Assignments", icon: ClipboardList, path: "/assignments" },
+    { name: "Exams", icon: BookOpen, path: "/exams" },
+    { name: "Notes", icon: FileText, path: "/notes" },
+    { name: "Projects", icon: FolderKanban, path: "/projects" },
+    { name: "GPA", icon: GraduationCap, path: "/gpa" },
+    { name: "AI", icon: Bot, path: "/ai" },
+    { name: "Settings", icon: Settings, path: "/settings" },
+  ];
+
   return (
-    <aside className="w-64 min-h-screen bg-[#0b0f19] border-r border-gray-800 text-white p-5">
-      <h1 className="text-2xl font-bold mb-8">
+    <aside className="w-64 min-h-screen bg-[#0b0f19] border-r border-gray-800 text-white p-6">
+
+      <h1 className="text-3xl font-extrabold mb-10 tracking-wide">
         🧠 NeuroSpace
       </h1>
 
-      <nav className="space-y-3">
+      <nav className="space-y-2">
 
-        <div className="flex items-center gap-3 cursor-pointer hover:text-cyan-400">
-          <LayoutDashboard size={20}/>
-          Dashboard
-        </div>
+        {links.map((link) => {
+          const Icon = link.icon;
 
-        <div className="flex items-center gap-3 cursor-pointer hover:text-cyan-400">
-          <CalendarDays size={20}/>
-          Timetable
-        </div>
-
-        <div className="flex items-center gap-3 cursor-pointer hover:text-cyan-400">
-          <ClipboardList size={20}/>
-          Assignments
-        </div>
-
-        <div className="flex items-center gap-3 cursor-pointer hover:text-cyan-400">
-          <BookOpen size={20}/>
-          Exams
-        </div>
-
-        <div className="flex items-center gap-3 cursor-pointer hover:text-cyan-400">
-          <FileText size={20}/>
-          Notes
-        </div>
-
-        <div className="flex items-center gap-3 cursor-pointer hover:text-cyan-400">
-          <FolderKanban size={20}/>
-          Projects
-        </div>
-
-        <div className="flex items-center gap-3 cursor-pointer hover:text-cyan-400">
-          <GraduationCap size={20}/>
-          GPA
-        </div>
-
-        <div className="flex items-center gap-3 cursor-pointer hover:text-cyan-400">
-          <Bot size={20}/>
-          AI
-        </div>
-
-        <div className="flex items-center gap-3 cursor-pointer hover:text-cyan-400">
-          <Settings size={20}/>
-          Settings
-        </div>
+          return (
+            <NavLink
+              key={link.name}
+              to={link.path}
+              className={({ isActive }) =>
+                `flex items-center gap-3 p-3 rounded-lg transition-all duration-200 ${
+                  isActive
+                    ? "bg-cyan-500 text-black font-bold"
+                    : "hover:bg-gray-800 hover:text-cyan-400"
+                }`
+              }
+            >
+              <Icon size={20} />
+              {link.name}
+            </NavLink>
+          );
+        })}
 
       </nav>
     </aside>
