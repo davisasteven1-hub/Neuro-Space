@@ -1,51 +1,32 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Exam } from '../types';
 import { EXAM_DATA } from '../constants';
 
-export function useExamStorage(): [Exam[], (value: Exam[] | ((prev: Exam[]) => Exam[])) => void, boolean] {
-    const [exams, setExamsState] = useState<Exam[]>(EXAM_DATA);
-    const [loading, setLoading] = useState(true);
-    const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+const STORAGE_KEY = 'exams';
 
-    // Load from JSON file on mount
-    useEffect(() => {
-        fetch('/api/exams')
-            .then(res => {
-                if (!res.ok) throw new Error('Failed to fetch');
-                return res.json();
-            })
-            .then((data: Exam[]) => {
-                setExamsState(data);
-                setLoading(false);
-            })
-            .catch(() => {
-                // Fallback to constants if API unavailable (e.g. static hosting)
-                setExamsState(EXAM_DATA);
-                setLoading(false);
-            });
-    }, []);
+export function useExamStorage(): [Exam[], React.Dispatch<React.SetStateAction<Exam[]>>, boolean] {
+  const [exams, setExams] = useState<Exam[]>([]);
+  const [loading, setLoading] = useState(true);
 
-    // Save to JSON file (debounced 500ms to avoid excessive writes)
-    const persistToFile = useCallback((data: Exam[]) => {
-        if (saveTimeout.current) clearTimeout(saveTimeout.current);
-        saveTimeout.current = setTimeout(() => {
-            fetch('/api/exams', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data, null, 4),
-            }).catch(() => {
-                // Silent fail — file write unavailable
-            });
-        }, 500);
-    }, []);
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(STORAGE_KEY);
+      setExams(raw ? (JSON.parse(raw) as Exam[]) : EXAM_DATA);
+    } catch {
+      setExams(EXAM_DATA);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-    const setExams = useCallback((value: Exam[] | ((prev: Exam[]) => Exam[])) => {
-        setExamsState(prev => {
-            const next = typeof value === 'function' ? value(prev) : value;
-            persistToFile(next);
-            return next;
-        });
-    }, [persistToFile]);
+  useEffect(() => {
+    if (loading) return;
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(exams));
+    } catch {
+      // ignore
+    }
+  }, [exams, loading]);
 
-    return [exams, setExams, loading];
+  return [exams, setExams, loading];
 }

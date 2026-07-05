@@ -4,7 +4,11 @@ import Sidebar from "./layout/Sidebar";
 import Header from "./layout/Header";
 
 import Dashboard from "./pages/Dashboard";
+import Timetable from "./pages/Timetable";
+import Assignments from "./pages/Assignments";
 import Exams from "./pages/Exams";
+import Notes from "./pages/Notes";
+import GPA from "./pages/GPA";
 
 const Placeholder = ({ title }: { title: string }) => (
   <div className="p-8 text-white">
@@ -34,20 +38,14 @@ function App() {
 
             <Route path="/exams" element={<Exams />} />
 
-            <Route
-              path="/timetable"
-              element={<Placeholder title="Timetable" />}
-            />
+            <Route path="/timetable" element={<Timetable />} />
 
             <Route
-              path="/assignments"
-              element={<Placeholder title="Assignments" />}
-            />
+  path="/assignments"
+  element={<Assignments />}
+/>
 
-            <Route
-              path="/notes"
-              element={<Placeholder title="Notes" />}
-            />
+            <Route path="/Notes" element={<Notes />} />
 
             <Route
               path="/projects"
@@ -55,8 +53,8 @@ function App() {
             />
 
             <Route
-              path="/gpa"
-              element={<Placeholder title="GPA Calculator" />}
+              path="/GPA"
+              element={<GPA />}
             />
 
             <Route

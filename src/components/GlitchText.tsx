@@ -1,18 +1,15 @@
 import React from 'react';
 
 interface GlitchTextProps {
-    text: string;
-    active?: boolean;
+  text: string;
+  active?: boolean;
 }
 
-export const GlitchText: React.FC<GlitchTextProps> = ({ text, active = false }) => (
-    <span className={`relative inline-block ${active ? 'animate-glitch' : ''}`}>
-        {text}
-        {active && (
-            <>
-                <span className="absolute top-0 left-0 -ml-[2px] text-panic opacity-70 animate-pulse">{text}</span>
-                <span className="absolute top-0 left-0 ml-[2px] text-caution opacity-70 animate-pulse">{text}</span>
-            </>
-        )}
-    </span>
+export const GlitchText: React.FC<GlitchTextProps> = ({ text, active }) => (
+  <span
+    className={active ? 'inline-block animate-pulse' : 'inline-block'}
+    style={active ? { textShadow: '2px 0 #FF0000, -2px 0 #00FFFF' } : undefined}
+  >
+    {text}
+  </span>
 );
